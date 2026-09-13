@@ -1,0 +1,19 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
+
+# Arduino build
+*.hex
+*.elf
+*.o
+build/
+.pio/
+
+# Secrets / local
+.env
+.env.*
+*.pem

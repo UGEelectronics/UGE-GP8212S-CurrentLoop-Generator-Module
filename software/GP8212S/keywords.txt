@@ -1,0 +1,31 @@
+#######################################
+# Syntax Coloring Map for GP8212S
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+GP8212S	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin	KEYWORD2
+isConnected	KEYWORD2
+setDAC	KEYWORD2
+setCurrent_mA	KEYWORD2
+setPercent4_20	KEYWORD2
+mAToDAC	KEYWORD2
+dacTo_mA	KEYWORD2
+calibrate4_20	KEYWORD2
+clearCalibration	KEYWORD2
+store	KEYWORD2
+lastDAC	KEYWORD2
+fullScale_mA	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+DEFAULT_I2C_ADDR	LITERAL1
+DAC_MAX	LITERAL1
+FULL_SCALE_MA	LITERAL1
