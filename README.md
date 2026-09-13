@@ -32,7 +32,7 @@ Assembled modules: contact [UGE Electronics](https://uge-one.com/).
 ```text
 software/GP8212S/     Arduino & ESP32 library + examples
 docs/images/          Board photos and schematic
-hardware/             Eagle .sch/.brd + interactive BOM (HTML)
+hardware/             Interactive BOM (HTML) for hand soldering
 stm32_reference/      Original STM32F10x bit-bang I²C (MyI2C)
 ```
 
@@ -161,8 +161,6 @@ dac.calibrate4_20(/* your 4 mA code */, /* your 20 mA code */);
 | File | Description |
 |------|-------------|
 | [`hardware/GP8212SBOM.html`](hardware/GP8212SBOM.html) | **Interactive BOM** — open in a browser to place / identify parts while soldering |
-| [`hardware/4-20mA-generator.sch`](hardware/4-20mA-generator.sch) | Eagle schematic |
-| [`hardware/4-20mA-generator.brd`](hardware/4-20mA-generator.brd) | Eagle board |
 
 Download the HTML and open it locally (double-click). You do not need to host it.
 
