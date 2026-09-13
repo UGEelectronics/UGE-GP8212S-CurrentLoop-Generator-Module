@@ -171,8 +171,11 @@ GitHub’s file viewer only shows HTML **source**. Use one of these instead:
 | **Docs home** | [ugeelectronics.github.io/…/](https://ugeelectronics.github.io/UGE-GP8212S-CurrentLoop-Generator-Module/) |
 | **Offline** | Download [`docs/GP8212SBOM.html`](docs/GP8212SBOM.html) and double-click it |
 
-> **First-time Pages setup (repo admins):**  
-> Settings → Pages → **Source: GitHub Actions**, then re-run the *Deploy GitHub Pages* workflow (or push any commit). After that the live BOM link above will work.
+> **First-time Pages setup (repo admins) — required once:**  
+> 1. Open **Settings → Pages**  
+> 2. Under **Build and deployment → Source**, choose **Deploy from a branch**  
+> 3. Branch: **main**, folder: **/docs** → **Save**  
+> 4. Wait about a minute, then open the live BOM link above.
 
 ---
 
