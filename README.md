@@ -25,14 +25,17 @@ Compact **I²C-controlled** analog output board based on the Linearin **GP8212S-
 
 Assembled modules: contact [UGE Electronics](https://uge-one.com/).
 
+**Interactive BOM (renders in browser):**  
+https://ugeelectronics.github.io/UGE-GP8212S-CurrentLoop-Generator-Module/GP8212SBOM.html
+
 ---
 
 ## Repository layout
 
 ```text
 software/GP8212S/     Arduino & ESP32 library + examples
-docs/images/          Board photos and schematic
-hardware/             Interactive BOM (HTML) for hand soldering
+docs/                 GitHub Pages site + interactive BOM + images
+hardware/             Link to the live BOM (GitHub code view cannot render HTML)
 stm32_reference/      Original STM32F10x bit-bang I²C (MyI2C)
 ```
 
@@ -158,11 +161,18 @@ dac.calibrate4_20(/* your 4 mA code */, /* your 20 mA code */);
   <img src="docs/images/schematic.png" alt="GP8212S module schematic" width="720">
 </p>
 
-| File | Description |
-|------|-------------|
-| [`hardware/GP8212SBOM.html`](hardware/GP8212SBOM.html) | **Interactive BOM** — open in a browser to place / identify parts while soldering |
+### Interactive BOM (opens in the browser)
 
-Download the HTML and open it locally (double-click). You do not need to host it.
+GitHub’s file viewer only shows HTML **source**. Use one of these instead:
+
+| | |
+|---|---|
+| **Live page (recommended)** | [Open interactive BOM](https://ugeelectronics.github.io/UGE-GP8212S-CurrentLoop-Generator-Module/GP8212SBOM.html) |
+| **Docs home** | [ugeelectronics.github.io/…/](https://ugeelectronics.github.io/UGE-GP8212S-CurrentLoop-Generator-Module/) |
+| **Offline** | Download [`docs/GP8212SBOM.html`](docs/GP8212SBOM.html) and double-click it |
+
+> **First-time Pages setup (repo admins):**  
+> Settings → Pages → **Source: GitHub Actions**, then re-run the *Deploy GitHub Pages* workflow (or push any commit). After that the live BOM link above will work.
 
 ---
 
