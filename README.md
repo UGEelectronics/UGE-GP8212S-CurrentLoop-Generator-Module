@@ -145,15 +145,16 @@ Datasheet: `IOUT = (2.5 V / Rs) × (DATA / 0x7FFF)`.
 At **~12 V** loop supply (MT3608), use a **220–330 Ω** load (compliance is lower than at 24 V).
 
 1. Power the module from **5 V**, connect I²C, load on `IOUT`, DMM in series (mA) or measure `V / R` across the load.
-2. Run **Calibrate4_20**, open Serial Monitor @ **115200**.
-3. Trim to **4.000 mA** → send `s4`.
-4. Trim to **20.000 mA** → send `s20`.
+2. Run **Calibrate4_20**, open Serial Monitor @ **115200** (Newline).
+3. **4 mA:** send `t 4`, then either fine-trim or type `m <meter_reading>` (one-shot rescale), then `s4`.
+4. **20 mA:** send `t 20`, then `2`. If the meter is high (e.g. **25.72 mA**), type **`m 25.72`** once — do not mash `-`. Fine-trim with `[` `]`, then `s20`.
 5. Send `apply` and paste the printed line into your sketch:
 
 ```cpp
 dac.calibrate4_20(/* your 4 mA code */, /* your 20 mA code */);
 ```
 
+Useful commands: `m <mA>` rescale from meter · `+++`/`---` ±2000 · `++`/`--` ±500 · `+`/`-` ±50 · `[`/`]` ±5.
 ---
 
 ## Hardware & soldering

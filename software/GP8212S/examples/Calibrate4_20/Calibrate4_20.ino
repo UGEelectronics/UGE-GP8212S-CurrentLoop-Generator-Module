@@ -1,23 +1,31 @@
 /*
  * GP8212S — two-point 4 mA / 20 mA calibration helper
  *
- * Hardware (this board):
- *   - Power module from 5 V USB/bench → MT3608 boosts to ~12 V for GP8212S VCC
- *   - Connect I2C SDA/SCL/GND to MCU
- *   - Put a known load on the loop (220–330 Ω recommended at 12 V supply)
- *   - Measure loop current with a DMM in series, OR measure Vload and compute
- *     I = Vload / Rload
+ * Fast path when the meter is way off the ideal code (e.g. ideal "20 mA"
+ * code makes ~25.7 mA): type the measured value once —
  *
- * Serial commands (open Serial Monitor @ 115200, "No line ending" or "Newline"):
- *   + / -     coarse step DAC  (±50)
- *   ] / [     fine step DAC    (±5)
- *   4         jump near ideal 4 mA code
- *   2         jump near ideal 20 mA code
- *   s4        save current DAC as "4 mA" calibration point
- *   s20       save current DAC as "20 mA" calibration point
- *   apply     print the calibrate4_20(...) line to paste into your sketch
- *   g <mA>    after both points saved, go to that current using calibration
- *   ?         help
+ *   t 20
+ *   m 25.72
+ *
+ * That rescales the DAC in one step: newCode = code * (target / measured).
+ * Then fine-trim with [ ] and save with s20.
+ *
+ * Serial Monitor @ 115200, line ending: Newline (or Both NL & CR).
+ *
+ * Commands:
+ *   t 4 | t 20     set calibration target (default 4 at start)
+ *   m <mA>         rescale DAC so output moves toward current target
+ *                  example: meter shows 25.72 while targeting 20 → "m 25.72"
+ *   +++ / ---      huge step  (±2000)
+ *   ++ / --        large step (±500)
+ *   + / -          medium     (±50)
+ *   ] / [          fine       (±5)
+ *   4 | 2          jump to ideal (or last saved) 4 mA / 20 mA code
+ *   c <code>       set raw DAC 0..32767
+ *   s4 | s20       save current DAC as 4 mA / 20 mA point
+ *   apply          print calibrate4_20(...) for your sketch
+ *   g <mA>         after apply, go to that current using calibration
+ *   ?              help
  */
 
 #include <Wire.h>
@@ -41,31 +49,79 @@ uint16_t saved4 = 0;
 uint16_t saved20 = 0;
 bool have4 = false;
 bool have20 = false;
+float target_mA = 4.0f;  // used by "m <reading>"
 
 String line;
 
+static uint16_t clampCode(long c) {
+  if (c < 0) return 0;
+  if (c > (long)GP8212S::DAC_MAX) return GP8212S::DAC_MAX;
+  return (uint16_t)c;
+}
+
 void printHelp() {
   Serial.println(F("--- GP8212S calibration ---"));
-  Serial.println(F("1) Power 5V into board (MT3608 → ~12V). Confirm ~12V on VCC."));
-  Serial.println(F("2) Load IOUT with 220..330 ohm (12V limited compliance)."));
-  Serial.println(F("3) DMM in series on mA range, or V across Rload → I=V/R."));
-  Serial.println(F("4) Use +/- and ]/[ to trim until meter reads 4.000 mA, then 's4'."));
-  Serial.println(F("5) Jump with '2', trim to 20.000 mA, then 's20'."));
-  Serial.println(F("6) Type 'apply' and paste the printed line into your firmware."));
-  Serial.println(F("Cmds: + - ] [  4  2  s4  s20  apply  g <mA>  ?"));
+  Serial.println(F("Setup: 5V in (MT3608→~12V), I2C, load 220..330Ω, DMM on mA."));
+  Serial.println();
+  Serial.println(F("FAST calibrate (recommended):"));
+  Serial.println(F("  t 4          then trim / or:  m <meter_mA>"));
+  Serial.println(F("  s4"));
+  Serial.println(F("  t 20"));
+  Serial.println(F("  2            (jump near 20 mA code)"));
+  Serial.println(F("  m 25.72      (if meter reads 25.72 — one-shot rescale!)"));
+  Serial.println(F("  [ ]          fine trim to 20.000"));
+  Serial.println(F("  s20"));
+  Serial.println(F("  apply"));
+  Serial.println();
+  Serial.println(F("Steps: +++ --- (±2000)  ++ -- (±500)  + - (±50)  ] [ (±5)"));
+  Serial.println(F("Other: 4  2  c <code>  g <mA>  ?"));
+  Serial.print(F("Current target = "));
+  Serial.print(target_mA, 1);
+  Serial.println(F(" mA  (change with t 4 / t 20)"));
 }
 
 void applyCode(uint16_t c) {
-  code = c;
-  if (code > GP8212S::DAC_MAX) code = GP8212S::DAC_MAX;
+  code = clampCode(c);
   dac.setDAC(code);
-  Serial.print(F("DAC=0x"));
-  Serial.print(code, HEX);
-  Serial.print(F(" ("));
+  Serial.print(F("DAC="));
   Serial.print(code);
+  Serial.print(F(" (0x"));
+  Serial.print(code, HEX);
   Serial.print(F(")  ideal~"));
   Serial.print(dac.dacTo_mA(code), 3);
+  Serial.print(F(" mA | target="));
+  Serial.print(target_mA, 1);
   Serial.println(F(" mA"));
+}
+
+void stepCode(long delta) {
+  applyCode(clampCode((long)code + delta));
+}
+
+void rescaleFromMeter(float measured_mA) {
+  if (measured_mA <= 0.01f) {
+    Serial.println(F("Measured mA must be > 0.01"));
+    return;
+  }
+  if (code == 0) {
+    Serial.println(F("DAC is 0 — set a non-zero code first (try 2 or 4)."));
+    return;
+  }
+
+  // I ∝ DAC  →  new = old * (want / got)
+  long next = (long)((double)code * (double)target_mA / (double)measured_mA + 0.5);
+  uint16_t before = code;
+  applyCode(clampCode(next));
+  Serial.print(F("Rescaled from meter "));
+  Serial.print(measured_mA, 3);
+  Serial.print(F(" mA → want "));
+  Serial.print(target_mA, 1);
+  Serial.print(F(" mA  ("));
+  Serial.print(before);
+  Serial.print(F(" → "));
+  Serial.print(code);
+  Serial.println(F(")"));
+  Serial.println(F("Check meter, then fine-trim with [ ] and save s4/s20."));
 }
 
 void setup() {
@@ -78,6 +134,7 @@ void setup() {
   }
 
   printHelp();
+  target_mA = 4.0f;
   applyCode(IDEAL_4MA);
 }
 
@@ -98,18 +155,45 @@ void loop() {
 
     if (line == "?") {
       printHelp();
+    } else if (line == "+++") {
+      stepCode(+2000);
+    } else if (line == "---") {
+      stepCode(-2000);
+    } else if (line == "++") {
+      stepCode(+500);
+    } else if (line == "--") {
+      stepCode(-500);
     } else if (line == "+") {
-      applyCode(code + 50);
+      stepCode(+50);
     } else if (line == "-") {
-      applyCode(code > 50 ? code - 50 : 0);
+      stepCode(-50);
     } else if (line == "]") {
-      applyCode(code + 5);
+      stepCode(+5);
     } else if (line == "[") {
-      applyCode(code > 5 ? code - 5 : 0);
+      stepCode(-5);
     } else if (line == "4") {
+      target_mA = 4.0f;
       applyCode(have4 ? saved4 : IDEAL_4MA);
     } else if (line == "2") {
-      applyCode(have20 ? saved20 : IDEAL_20MA);
+      target_mA = 20.0f;
+      // Start a bit under ideal — many boards overshoot at the textbook code
+      applyCode(have20 ? saved20 : (uint16_t)((IDEAL_20MA * 4L) / 5L));  // ~80% of ideal ≈ 16 mA hint
+      Serial.println(F("Hint: if meter >> 20 mA, type: m <your_reading>"));
+    } else if (line.startsWith("t ")) {
+      float t = line.substring(2).toFloat();
+      if (t > 0.0f && t <= dac.fullScale_mA()) {
+        target_mA = t;
+        Serial.print(F("Target set to "));
+        Serial.print(target_mA, 3);
+        Serial.println(F(" mA — now type m <meter_reading>"));
+      } else {
+        Serial.println(F("Bad target. Example: t 20"));
+      }
+    } else if (line.startsWith("m ")) {
+      float measured = line.substring(2).toFloat();
+      rescaleFromMeter(measured);
+    } else if (line.startsWith("c ")) {
+      applyCode(clampCode(line.substring(2).toInt()));
     } else if (line == "s4") {
       saved4 = code;
       have4 = true;
@@ -149,10 +233,16 @@ void loop() {
         Serial.println(c);
       }
     } else {
-      // raw decimal DAC code
-      long v = line.toInt();
-      if (v >= 0 && v <= GP8212S::DAC_MAX) {
-        applyCode((uint16_t)v);
+      // bare number = raw DAC code
+      bool numeric = true;
+      for (unsigned i = 0; i < line.length(); i++) {
+        if (line[i] < '0' || line[i] > '9') {
+          numeric = false;
+          break;
+        }
+      }
+      if (numeric) {
+        applyCode(clampCode(line.toInt()));
       } else {
         Serial.println(F("Unknown cmd. Type ?"));
       }
