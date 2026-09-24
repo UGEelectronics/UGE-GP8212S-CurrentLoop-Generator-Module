@@ -5,7 +5,11 @@ Compact **I²C-controlled** analog output board based on the Linearin **GP8212S-
 **[Open interactive BOM ↗](https://ugeelectronics.github.io/UGE-GP8212S-CurrentLoop-Generator-Module/GP8212SBOM.html)** — browser BOM for soldering / identifying parts (do not use the GitHub `.html` file viewer).
 
 <p align="center">
-  <img src="docs/images/board.jpg" alt="UGE GP8212S current loop generator board" width="640">
+  <img src="docs/images/module-top.jpg" alt="UGE GP8212S module top view" width="520">
+</p>
+
+<p align="center">
+  <img src="docs/images/module-bottom.jpg" alt="UGE GP8212S module bottom — I2C 4-20mA Generator" width="520">
 </p>
 
 | | |
@@ -61,19 +65,24 @@ Sketch → Include Library → Add .ZIP Library… and select a ZIP that contain
 
 ### 2. Wire the module
 
-| Module | Arduino Uno / Nano | ESP32 (typical) |
-|--------|--------------------|-----------------|
-| **SDA** | A4 | GPIO 21 |
-| **SCL** | A5 | GPIO 22 |
-| **GND** | GND | GND |
-| **5 V** | 5 V (powers MT3608 → ~12 V for the DAC) | 5 V capable supply to module VIN |
+<p align="center">
+  <img src="docs/images/arduino-wiring.jpg" alt="Arduino Uno wired to UGE GP8212S module" width="720">
+</p>
+
+| Module | Arduino Uno / Nano | ESP32 (typical) | Notes |
+|--------|--------------------|-----------------|-------|
+| **5 V** (H1) | 5 V | 5 V-capable supply | Powers MT3608 → ~12 V for the DAC |
+| **GND** (H1) | GND | GND | Common ground |
+| **SCL** (H2) | A5 | GPIO 22 | I²C clock |
+| **SDA** (H2) | A4 | GPIO 21 | I²C data |
+| **IOUT** (blue terminal) | — | — | Loop output — connect load / meter here |
 
 - Share **GND** between MCU and module.
-- Do **not** feed the GP8212S chip `VCC` pin from USB 5 V directly — use the module’s **5 V input** so the MT3608 can boost to ~12 V.
+- Do **not** feed the GP8212S chip `VCC` pin from USB 5 V directly — use the module’s **5 V** input so the MT3608 can boost to ~12 V.
 - I²C works at **3.3 V** (ESP32) or **5 V** (classic Arduino).
 
 <p align="center">
-  <img src="docs/images/pcb-top.jpg" alt="PCB top view" width="480">
+  <img src="docs/images/board.jpg" alt="Assembled module overview" width="480">
 </p>
 
 ### 3. Minimal sketch
@@ -97,6 +106,8 @@ void setup() {
   }
 
   dac.setCurrent_mA(12.0);     // milliamps
+  // After one-time calibration, paste your line from "apply":
+  // dac.calibrate4_20(5200, 26200);
   // dac.setPercent4_20(50);   // 0–100% of 4–20 mA span
   // dac.setDAC(0x3D70);       // raw 15-bit code
 }
@@ -140,21 +151,35 @@ Datasheet: `IOUT = (2.5 V / Rs) × (DATA / 0x7FFF)`.
 
 ---
 
-## Calibration (recommended)
+## Calibration (recommended — once per board)
 
-At **~12 V** loop supply (MT3608), use a **220–330 Ω** load (compliance is lower than at 24 V).
+You do **not** repeat this on every power-on. Run it once, then paste `dac.calibrate4_20(...)` into your sketches.
 
-1. Power the module from **5 V**, connect I²C, load on `IOUT`, DMM in series (mA) or measure `V / R` across the load.
-2. Run **Calibrate4_20**, open Serial Monitor @ **115200** (Newline).
-3. **4 mA:** send `t 4`, then either fine-trim or type `m <meter_reading>` (one-shot rescale), then `s4`.
-4. **20 mA:** send `t 20`, then `2`. If the meter is high (e.g. **25.72 mA**), type **`m 25.72`** once — do not mash `-`. Fine-trim with `[` `]`, then `s20`.
-5. Send `apply` and paste the printed line into your sketch:
+### What you need
+
+- Arduino (or ESP32) + this module wired as above  
+- **~330 Ω** load on the blue **IOUT** terminal (**1 W preferred**)  
+- DMM measuring the **actual loop current** through that resistor  
+
+### Steps
+
+1. Upload **Examples → GP8212S → Calibrate4_20**.
+2. Open **Serial Monitor** at **115200** (line ending: **Newline**).
+3. Type **`4`**  
+   Read the meter (example: **8.08 mA**).  
+   Type **`M 8.08`** — the sketch rescales to 4 mA and **auto-saves** the 4 mA point.
+4. Type **`20`**  
+   Read the meter (example: **25.63 mA**).  
+   Type **`M 25.63`** — rescales to 20 mA and **auto-saves** the 20 mA point.
+5. Type **`apply`**. You get a line like:
 
 ```cpp
-dac.calibrate4_20(/* your 4 mA code */, /* your 20 mA code */);
+dac.calibrate4_20(5200, 26200);
 ```
 
-Useful commands: `m <mA>` rescale from meter · `+++`/`---` ±2000 · `++`/`--` ±500 · `+`/`-` ±50 · `[`/`]` ±5.
+6. Put that line in `setup()` **after** `dac.begin(...)` in all future code for this board.
+
+Optional fine trim before `apply`: `+++` `---` (±2000), `++` `--` (±500), `+` `-` (±50), `]` `[` (±5). Commands are case-insensitive (`m` / `M`).
 ---
 
 ## Hardware & soldering
