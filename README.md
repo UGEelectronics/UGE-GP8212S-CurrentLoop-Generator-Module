@@ -20,6 +20,7 @@ Compact **I²C-controlled** analog output board based on the Linearin **GP8212S-
 | **Module power** | **5 V** input → onboard **MT3608** boost → ~**12 V** for the DAC |
 | **MCU examples** | Arduino / ESP32 library in this repo; STM32 bit-bang reference included |
 | **Interactive BOM** | **[Open in browser](https://ugeelectronics.github.io/UGE-GP8212S-CurrentLoop-Generator-Module/GP8212SBOM.html)** |
+| **Buy the full module** | **[uge-one.com](https://uge-one.com/product/gp8212s-4-20-ma-current-loop-generator-transmitter-i2c-module/)** |
 
 ---
 
@@ -27,11 +28,12 @@ Compact **I²C-controlled** analog output board based on the Linearin **GP8212S-
 
 | Item | Link |
 |------|------|
+| **Full module (assembled)** | [uge-one.com — GP8212S 4–20 mA I2C module](https://uge-one.com/product/gp8212s-4-20-ma-current-loop-generator-transmitter-i2c-module/) |
 | **GP8212S chip only** | [uge-one.com — GP8212S-TC50-EW](https://uge-one.com/product/gp8212s-tc50-ew-15-bit-i%c2%b2c-to-4-20ma-dac-ic-esop-8/) |
 | **Empty bare PCB** | [uge-one.com — PCB for I2C 4–20 mA generator](https://uge-one.com/product/pcb-for-i2c-4-20ma-generator-module/) |
 | **Interactive BOM** | **[Open live BOM](https://ugeelectronics.github.io/UGE-GP8212S-CurrentLoop-Generator-Module/GP8212SBOM.html)** |
 
-Assembled modules: contact [UGE Electronics](https://uge-one.com/).
+SKU of the full module: **GP8212S-MOD**. More products: [UGE Electronics](https://uge-one.com/).
 
 ---
 
